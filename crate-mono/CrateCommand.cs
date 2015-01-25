@@ -1,149 +1,189 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Data;
 using System.Data.Common;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Net;
+using Crate.Communication;
+using Crate.Exceptions;
 
 namespace Crate
 {
-	public class CrateCommand : IDbCommand
-	{
-		private CrateConnection connection;
-		private CrateParameterCollection parameters = new CrateParameterCollection();
+    public class CrateCommand : IDbCommand
+    {
+        private readonly CrateConnection _connection;
+        private readonly CrateParameterCollection _parameters = new CrateParameterCollection();
 
-		public string CommandText { get; set; }
-		public int CommandTimeout { get; set; }
+        public string CommandText { get; set; }
+        public int CommandTimeout { get; set; }
 
-		public IDbConnection Connection {
-			get {
-				return connection;
-			}
-			set {
-				throw new InvalidOperationException();
-			}
-		}
+        public IDbConnection Connection
+        {
+            get
+            {
+                return _connection;
+            }
+            set
+            {
+                throw new InvalidOperationException();
+            }
+        }
 
-		public CrateCommand (string commandText, CrateConnection connection)
-		{
-			CommandText = commandText;
-			this.connection = connection;
-		}
+        public CrateCommand(string commandText, CrateConnection connection)
+        {
+            CommandText = commandText;
+            this._connection = connection;
+        }
 
-		#region IDbCommand implementation
+        #region IDbCommand implementation
 
-		public void Cancel ()
-		{
-			throw new NotImplementedException ();
-		}
+        public void Cancel()
+        {
+            throw new NotImplementedException();
+        }
 
-		public IDbDataParameter CreateParameter ()
-		{
-			return new CrateParameter();
-		}
+        public IDbDataParameter CreateParameter()
+        {
+            return new CrateParameter();
+        }
 
-		public int ExecuteNonQuery() 
-		{
-			var task = ExecuteNonQueryAsync();
-			task.Wait();
-			return task.Result;
-		}
+        public int ExecuteNonQuery()
+        {
+            var task = ExecuteNonQueryAsync();
+            task.Wait();
+            return task.Result;
+        }
 
-		public async Task<int> ExecuteNonQueryAsync ()
-		{
-			return (await execute()).rowcount;
-		}
+        public async Task<int> ExecuteNonQueryAsync()
+        {
+            return (await Execute()).rowcount;
+        }
 
-		public IDataReader ExecuteReader()
-		{
-			var task = ExecuteReaderAsync();
-			task.Wait();
-			return task.Result;
-		}
+        public IDataReader ExecuteReader()
+        {
+            var task = ExecuteReaderAsync();
+            task.Wait();
+            return task.Result;
+        }
 
-		protected async Task<SqlResponse> execute(int currentRetry = 0)
-		{
-			using (var client = new HttpClient()) {
-				var server = connection.nextServer();
-				try {
-					var resp = await client.PostAsJsonAsync(
-						server.sqlUri(),
-						new SqlRequest(CommandText, parameters.Select(x => x.Value).ToArray())
-					);
-					if (!resp.IsSuccessStatusCode) {
-						throw new CrateException(resp.ReasonPhrase + " " + resp.Content.ReadAsStringAsync().Result);
-					}
-					return await resp.Content.ReadAsAsync<SqlResponse>();
-				} catch (WebException) {
-					connection.markAsFailed(server);
-					if (currentRetry > 3) {
-						throw ;
-					}
-				}
-				return await execute(currentRetry++);
-			}
-		}
+        protected Task<SqlResponse> Execute()
+        {
+            return Execute(0);
+        }
+
+        private async Task<SqlResponse> Execute(int currentRetry)
+        {
+            var server = _connection.NextServer();
+            if(server==null)
+                throw new CrateException("No servers online!");
+            try
+            {
+                /*switch (server.Scheme)
+                {
+                    case "http":
+                    case "https":
+                    {
+                        
+                    }
+                    case "tcp"://??
+                }*/
+                return await (new HttpCommunication()).GetAsync(server.SqlUri(),new SqlRequest(CommandText,_parameters.Select(x => x.Value).ToArray()));
+            }
+            catch (WebException ex)
+            {
+                if (ex.Response == null ||
+                    ((HttpWebResponse) ex.Response).StatusCode == HttpStatusCode.InternalServerError)
+                {
+                    _connection.MarkAsFailed(server);
+                    if (currentRetry > 3)
+                    {
+                        throw new CrateDbException("Retry count exceeded", ex);
+                    }
+                }
+                else
+                {
+                    if (ex.Response != null)
+                    {
+                        using (var t = new StreamReader(ex.Response.GetResponseStream()))
+                        {
+                            throw new CrateDbException(t.ReadToEnd());
+                        }
+                    }
+                    throw new CrateDbException(ex.Status.ToString());
+                }
+            }
+            return await Execute(currentRetry++);
+        }
+
+        public async Task<IDataReader> ExecuteReaderAsync()
+        {
+            return new CrateDataReader(await Execute());
+        }
+
+        public IDataReader ExecuteReader(CommandBehavior behavior)
+        {
+            return ExecuteReader();
+        }
+
+        public object ExecuteScalar()
+        {
+            using (var reader = ExecuteReader())
+            {
+                reader.Read();
+                return reader[0];
+            }
+        }
+
+        public void Prepare()
+        {
+        }
 
 
-		public async Task<IDataReader> ExecuteReaderAsync ()
-		{
-			return new CrateDataReader(await execute());
-		}
+        public CommandType CommandType { get; set; }
 
-		public IDataReader ExecuteReader (CommandBehavior behavior)
-		{
-			return ExecuteReader();
-		}
+        public IDataParameterCollection Parameters
+        {
+            get
+            {
+                return _parameters;
+            }
+        }
 
-		public object ExecuteScalar ()
-		{
-			using (var reader = ExecuteReader()) {
-				reader.Read();
-				return reader[0];
-			}
-		}
+        public IDbTransaction Transaction
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
 
-		public void Prepare ()
-		{
-		}
+        public UpdateRowSource UpdatedRowSource
+        {
+            get
+            {
+                throw new NotImplementedException();
+            }
+            set
+            {
+                throw new NotImplementedException();
+            }
+        }
 
+        #endregion
 
-		public CommandType CommandType { get; set; }
+        #region IDisposable implementation
 
-		public IDataParameterCollection Parameters {
-			get {
-				return parameters;
-			}
-		}
+        public void Dispose()
+        {
+        }
 
-		public IDbTransaction Transaction {
-			get {
-				throw new NotImplementedException ();
-			}
-			set {
-				throw new NotImplementedException ();
-			}
-		}
-
-		public UpdateRowSource UpdatedRowSource {
-			get {
-				throw new NotImplementedException ();
-			}
-			set {
-				throw new NotImplementedException ();
-			}
-		}
-
-		#endregion
-
-		#region IDisposable implementation
-
-		public void Dispose ()
-		{
-		}
-
-		#endregion
-	}
+        #endregion
+    }
 }
 

@@ -23,7 +23,7 @@ namespace Crate
 			ParameterName = parameterName;
 			Direction = ParameterDirection.Input;
 			SourceVersion = DataRowVersion.Current;
-			DbType = inferType(value);
+			DbType = InferType(value);
 			Value = value;
 		}
 
@@ -50,7 +50,7 @@ namespace Crate
 
 		#endregion
 
-		private DbType inferType(object value) {
+		private static DbType InferType(object value) {
 			switch (Type.GetTypeCode (value.GetType())) {
 			case TypeCode.Empty:
 				throw new ArgumentException();
