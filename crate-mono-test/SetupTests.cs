@@ -1,15 +1,28 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Crate;
+using NUnit.Framework;
 
-namespace cratemonotest.Helpers
+namespace cratemonotest
 {
-    public static class TestSetupCleanupHelper
+    [SetUpFixture]
+    public class SetupTest
     {
-        public static void DropTable(string name)
+
+        [SetUp]
+        public void Init()
+        {
+            DropTable("ip_geopoint");
+            CreateIpGeoTable();
+            InsertIntoIpGeoTable();
+        }
+
+        [TearDown]
+        public void Cleaunp()
+        {
+            DropTable("ip_geopoint");
+        }
+
+        private static void DropTable(string name)
         {
             try
             {
@@ -27,7 +40,7 @@ namespace cratemonotest.Helpers
             }
         }
 
-        public static void CreateIpGeoTable()
+        private static void CreateIpGeoTable()
         {
             using (var conn = new CrateConnection())
             {
@@ -39,7 +52,7 @@ namespace cratemonotest.Helpers
                 }
             }
         }
-        public static void InsertIntoIpGeoTable()
+        private static void InsertIntoIpGeoTable()
         {
             using (var conn = new CrateConnection())
             {

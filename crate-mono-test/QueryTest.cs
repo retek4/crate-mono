@@ -10,23 +10,10 @@ using NUnit.Framework;
 
 namespace cratemonotest
 {
-    [TestFixture()]
+    [TestFixture]
     class QueryTest
     {
-        [TestFixtureSetUp]
-        public void Setup()
-        {
-            Helpers.TestSetupCleanupHelper.DropTable("ip_geopoint");
-            Helpers.TestSetupCleanupHelper.CreateIpGeoTable();
-            Helpers.TestSetupCleanupHelper.InsertIntoIpGeoTable();
-        }
-
-        [TestFixtureTearDown]
-        public void Cleaunp()
-        {
-            Helpers.TestSetupCleanupHelper.DropTable("ip_geopoint");
-        }
-
+       
         [Test()]
         public void TestWhere()
         {
@@ -169,7 +156,8 @@ namespace cratemonotest
                                                               FriendsCount = g.Sum(t => t.User.FriendsCount),
                                                               FollowersCount = g.Count(),
                                                               CreatedAt = g.Arbitrary(t => t.User.CreatedAt)
-                                                          }).OrderBy(t => t.Id).ThenByDescending(t => t.FriendsCount).Take(5).Skip(5));
+                                                          }).OrderBy(t => t.Id).
+                                                          ThenByDescending(t => t.FriendsCount).Take(5).Skip(5));
             }
             Assert.NotNull(users);
             Assert.True(5 == users.Count);
@@ -184,7 +172,7 @@ namespace cratemonotest
                 conn.Open();
                 list = conn.Where<IpGeopoint>(t => !string.IsNullOrEmpty(t.IpAddr));
             }
-            Assert.GreaterOrEqual(1, list.Count);
+            Assert.GreaterOrEqual(list.Count, 1);
             Assert.IsNotNull(list[0].Pin);
             Assert.IsTrue(list[0].Pin.Lat > 0);
             Assert.IsTrue(list[0].Pin.Lng > 0);
