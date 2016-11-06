@@ -168,6 +168,20 @@ namespace Crate
 
             return ret.Count > 0;
         }
+        public static void DropTable<T>(this CrateConnection conn)
+        {
+
+            var tabledata = AttributeHelpers.GetTableData(typeof(T));
+            conn.DropTable(tabledata.Name);
+        }
+        public static void DropTable(this CrateConnection conn, string name)
+        {
+            var sql = "DROP TABLE" + name ;
+            using (var cmd = new CrateCommand(sql, conn))
+            {
+                cmd.ExecuteNonQuery();
+            }
+        }
 
     }
 }

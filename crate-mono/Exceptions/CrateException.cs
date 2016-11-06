@@ -7,7 +7,9 @@ namespace Crate.Exceptions
         public CrateException(string message) : base(message)
         {
             
-        }public CrateException(string message,Exception innerex) : base(message,innerex)
+        }
+        
+        public CrateException(string message,Exception innerex) : base(message,innerex)
         {
             
         }

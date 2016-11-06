@@ -76,7 +76,7 @@ namespace Crate
         private async Task<SqlResponse> Execute(int currentRetry)
         {
             var server = _connection.NextServer();
-            if(server==null)
+            if (server == null)
                 throw new CrateException("No servers online!");
             try
             {
@@ -89,12 +89,15 @@ namespace Crate
                     }
                     case "tcp"://??
                 }*/
-                return await (new HttpCommunication()).GetAsync(server.SqlUri(),new SqlRequest(CommandText,_parameters.Select(x => x.Value).ToArray()));
+                return
+                    await
+                        (new HttpCommunication()).GetAsync(server.SqlUri(),
+                            new SqlRequest(CommandText, _parameters.Select(x => x.Value).ToArray()));
             }
             catch (WebException ex)
             {
                 if (ex.Response == null ||
-                    ((HttpWebResponse) ex.Response).StatusCode == HttpStatusCode.InternalServerError)
+                    ((HttpWebResponse)ex.Response).StatusCode == HttpStatusCode.InternalServerError)
                 {
                     _connection.MarkAsFailed(server);
                     if (currentRetry > 3)
@@ -104,14 +107,28 @@ namespace Crate
                 }
                 else
                 {
-                    if (ex.Response != null)
+                    if (ex.Response == null)
+                        throw new CrateDbException(ex.Status.ToString());
+
+                    switch (((HttpWebResponse)ex.Response).StatusCode)
                     {
-                        using (var t = new StreamReader(ex.Response.GetResponseStream()))
-                        {
-                            throw new CrateDbException(t.ReadToEnd());
-                        }
+                        case HttpStatusCode.NotFound:
+                            {
+                                throw new CrateNotFound(ex.Message);
+                            }
+                        default:
+                            {
+                                var respone = ex.Response.GetResponseStream();
+                                if (respone != null)
+                                {
+                                    using (var t = new StreamReader(respone))
+                                    {
+                                        throw new CrateDbException(t.ReadToEnd());
+                                    }
+                                }
+                                throw new CrateDbException("unknown error");
+                            }
                     }
-                    throw new CrateDbException(ex.Status.ToString());
                 }
             }
             return await Execute(currentRetry++);

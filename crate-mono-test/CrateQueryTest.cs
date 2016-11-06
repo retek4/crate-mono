@@ -4,25 +4,24 @@ using NUnit.Framework;
 
 namespace cratemonotest
 {
-    [SetUpFixture]
-    public class SetupTest
+    public class CrateQueryTest
     {
 
-        [OneTimeSetUp]
+        [SetUp]
         public void Init()
         {
-            DropTable("ip_geopoint");
-            CreateIpGeoTable();
-            InsertIntoIpGeoTable();
+            //DropTable("ip_geopoint");
+            //CreateIpGeoTable();
+            //InsertIntoIpGeoTable();
         }
 
-        [OneTimeTearDownAttribute]
+        [TearDown]
         public void Cleaunp()
         {
-            DropTable("ip_geopoint");
+            //DropTable("ip_geopoint");
         }
 
-        private static void DropTable(string name)
+        internal static void DropTable(string name)
         {
             try
             {
@@ -42,14 +41,25 @@ namespace cratemonotest
 
         private static void CreateIpGeoTable()
         {
-            using (var conn = new CrateConnection())
+            try
             {
-                conn.Open();
-
-                using (var cmd = new CrateCommand("CREATE TABLE ip_geopoint ( id integer, ip_addr string, pin geo_point,dateutc timestamp) with (number_of_replicas = 0)", conn))
+                using (var conn = new CrateConnection())
                 {
-                    cmd.ExecuteNonQuery();
+                    conn.Open();
+
+                    using (
+                        var cmd =
+                            new CrateCommand(
+                                "CREATE TABLE ip_geopoint ( id integer, ip_addr string, pin geo_point,dateutc timestamp) with (number_of_replicas = 0)",
+                                conn))
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
                 }
+            }
+            catch (Exception)
+            {
+                
             }
         }
         private static void InsertIntoIpGeoTable()

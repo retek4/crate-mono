@@ -1,5 +1,4 @@
 ﻿using Crate.Attributes;
-using Crate.CrateSchema.Sys;
 
 namespace Crate.CrateSchema.Information
 {

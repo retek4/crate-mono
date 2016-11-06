@@ -29,35 +29,39 @@ namespace Crate.Helpers
             {
                 for (var i = 0; i < dt.Columns.Count; i++)
                 {
+                    if (dt.Columns[i].DataType == typeof(string))
+                        continue;
                     if (dt.Columns[i].DataType == typeof(DateTime))
                     {
                         if (!(row[i] is long)) continue;
                         row[i] = UnixDt.AddMilliseconds((long)row[i]);
                     }
                     else
+                    {
                         if ((row[i] is JObject) && dt.Columns[i].DataType != typeof(JObject))
                         {
-                            //TODO Fix...introduces performace issues.
                             var settings = new JsonSerializerSettings()
                             {
                                 ContractResolver = new CrateJsonContractResolver(dt.Columns[i].DataType),
                                 DateParseHandling = DateParseHandling.None,
                             };
-                            row[i] = JsonConvert.DeserializeObject(row[i].ToString(), dt.Columns[i].DataType, settings);
+                            row[i] = JsonConvert.DeserializeObject(row[i].ToString(), dt.Columns[i].DataType,
+                                settings);
+
                         }
-                        else
-                            if ((row[i] is JArray) && dt.Columns[i].DataType == typeof(GeoPoint))
+                        else if ((row[i] is JArray) && dt.Columns[i].DataType == typeof(GeoPoint))
+                        {
+                            var list = (row[i] as JArray).ToObject<List<double>>();
+                            if (list.Count == 2)
                             {
-                                var list = (row[i] as JArray).ToObject<List<double>>();
-                                if (list.Count == 2)
-                                {
-                                    row[i] = new GeoPoint(list[0], list[1]);
-                                }
-                                else
-                                {
-                                    row[i] = null;
-                                }
+                                row[i] = new GeoPoint(list[0], list[1]);
                             }
+                            else
+                            {
+                                row[i] = null;
+                            }
+                        }
+                    }
 
                 }
                 dt.Rows.Add(row);

@@ -3,14 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using Crate;
+using Crate.CrateSchema.Sys;
 using Crate.Helpers;
+using Crate.Methods;
 using Crate.Types;
 using cratemonotest.DC;
 using NUnit.Framework;
 
 namespace cratemonotest
 {
-    [TestFixture]
+    [TestFixture()]
     class QueryTest
     {
        
