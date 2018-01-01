@@ -8,19 +8,33 @@ using Crate.Helpers;
 using Crate.Methods;
 using Crate.Types;
 using cratemonotest.DC;
+using cratemonotest.Utils;
 using NUnit.Framework;
 
 namespace cratemonotest
 {
     [TestFixture()]
-    class QueryTest
+    internal class QueryTest:BaseSetup
     {
-       
+        [OneTimeSetUp]
+        public void Init()
+        {
+            TableUtils.DropTable("ip_geopoint");
+            TableUtils.CreateIpGeoTable();
+            TableUtils.InsertIntoIpGeoTable();
+        }
+
+        [OneTimeTearDown]
+        public void Cleaunp()
+        {
+            TableUtils.DropTable("ip_geopoint");
+        }
+
         [Test()]
         public void TestWhere()
         {
             List<SysCluster> list;
-            using (var conn = new CrateConnection())
+            using (var conn = TestCrateConnection())
             {
                 conn.Open();
                 list = conn.Where<SysCluster>(t => !string.IsNullOrEmpty(t.Name));
@@ -33,7 +47,7 @@ namespace cratemonotest
         public void TestCount()
         {
             long c1 = 0, c2 = 0;
-            using (var conn = new CrateConnection())
+            using (var conn = TestCrateConnection())
             {
                 conn.Open();
                 c1 = conn.Count<SysCluster>(t => !string.IsNullOrEmpty(t.Name));
@@ -47,7 +61,7 @@ namespace cratemonotest
         public void TestInnerArray()
         {
             List<SysCluster> list;
-            using (var conn = new CrateConnection())
+            using (var conn = TestCrateConnection())
             {
                 conn.Open();
 
@@ -60,7 +74,7 @@ namespace cratemonotest
         public void TestScalarFormat()
         {
             List<SysCluster> list;
-            using (var conn = new CrateConnection())
+            using (var conn = TestCrateConnection())
             {
                 conn.Open();
 
@@ -79,7 +93,7 @@ namespace cratemonotest
         {
             const int fromS = 1, toS = 3;
             List<SysCluster> list;
-            using (var conn = new CrateConnection())
+            using (var conn = TestCrateConnection())
             {
                 conn.Open();
                 list = conn.Execute<SysCluster, SysCluster>(t => (from a in t
@@ -110,7 +124,7 @@ namespace cratemonotest
         public void TestBasicExecute()
         {
             List<Result> res = null;
-            using (var conn = new CrateConnection())
+            using (var conn = TestCrateConnection())
             {
                 conn.Open();
                 res = conn.Execute<SysCluster, Result>(
@@ -128,7 +142,7 @@ namespace cratemonotest
         public void TestRegex()
         {
             List<Result> res = null;
-            using (var conn = new CrateConnection())
+            using (var conn = TestCrateConnection())
             {
                 conn.Open();
                 res = conn.Execute<SysCluster, Result>(
@@ -146,7 +160,7 @@ namespace cratemonotest
         public void TestComplexExecute()
         {
             List<User> users = null;
-            using (var conn = new CrateConnection())
+            using (var conn = TestCrateConnection())
             {
                 users = conn.Execute<Tweet, User>(tws => (from tw in tws
                                                           where tw.Text.Contains("love")
@@ -169,7 +183,7 @@ namespace cratemonotest
         public void TestScalarGeoPoint()
         {
             List<IpGeopoint> list;
-            using (var conn = new CrateConnection())
+            using (var conn = TestCrateConnection())
             {
                 conn.Open();
                 list = conn.Where<IpGeopoint>(t => !string.IsNullOrEmpty(t.IpAddr));
@@ -184,7 +198,7 @@ namespace cratemonotest
         public void TestScalarGeoPointDistance()
         {
             List<IpGeopoint> list;
-            using (var conn = new CrateConnection())
+            using (var conn = TestCrateConnection())
             {
                 conn.Open();
                 list = conn.Where<IpGeopoint>(t => Geo.Distance(t.Pin, new GeoPoint(21, 2)) > 1);
@@ -196,7 +210,7 @@ namespace cratemonotest
         public void TestScalarGeoWithin()
         {
             List<IpGeopoint> list;
-            using (var conn = new CrateConnection())
+            using (var conn = TestCrateConnection())
             {
                 conn.Open();
                 list = conn.Where<IpGeopoint>(t => Geo.Within(t.Pin, new GeoPolygon(new GeoPoint(40, 20), new GeoPoint(49, 20), new GeoPoint(49, 30), new GeoPoint(40, 30), new GeoPoint(40, 20))));
@@ -208,7 +222,7 @@ namespace cratemonotest
         public void TestScalarMathAbsFloor()
         {
             List<Tweet> list;
-            using (var conn = new CrateConnection())
+            using (var conn = TestCrateConnection())
             {
                 conn.Open();
                 list = conn.Where<Tweet>(t => Math.Abs(t.User.FriendsCount) > 1 && Math.Floor((double)t.User.FriendsCount) <13);
@@ -220,7 +234,7 @@ namespace cratemonotest
         public void TestScalarMathRoundCeilSqrt()
         {
             List<Tweet> list;
-            using (var conn = new CrateConnection())
+            using (var conn = TestCrateConnection())
             {
                 conn.Open();
                 list = conn.Where<Tweet>(t =>Math.Round(t.User.FriendsCount + Math.Ceiling(Math.Sqrt(15))) == 9);
@@ -232,7 +246,7 @@ namespace cratemonotest
         public void TestScalarMathLnLogFloor()
         {
             List<Tweet> list;
-            using (var conn = new CrateConnection())
+            using (var conn = TestCrateConnection())
             {
                 conn.Open();
                 list = conn.Where<Tweet>(t => (Math.Log(8) + t.User.FriendsCount) > 10 && Math.Floor(Math.Log10(10000) + t.User.FriendsCount)<15);
@@ -244,7 +258,7 @@ namespace cratemonotest
         public void TestOperators()
         {
             List<Result> res = null;
-            using (var conn = new CrateConnection())
+            using (var conn = TestCrateConnection())
             {
                 conn.Open();
                 res = conn.Execute<Tweet, Result>(

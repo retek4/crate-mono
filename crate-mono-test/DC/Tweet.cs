@@ -26,7 +26,7 @@ namespace cratemonotest.DC
         [CrateField(Name="text", Type=typeof(string))]
         public string Text { get; set; }
 
-        [CrateField(Name="user", Type=typeof(User))]
+        [CrateField(Name= "account_user", Type=typeof(User))]
         public User User { get; set; }
     }
 

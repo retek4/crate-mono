@@ -51,10 +51,10 @@
     <Compile Include="DC\CreatTestTable.cs" />
     <Compile Include="DC\IpGeopoint.cs" />
     <Compile Include="DC\Tweet.cs" />
-    <Compile Include="BaseTest.cs" />
-    <Compile Include="CrateQueryTest.cs" />
+    <Compile Include="ConnectionTest.cs" />
     <Compile Include="QueryTest.cs" />
-    <Compile Include="SetupTests.cs" />
+    <Compile Include="BaseSetup.cs" />
+    <Compile Include="Utils\TableUtils.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

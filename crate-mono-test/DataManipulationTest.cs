@@ -11,12 +11,12 @@ using NUnit.Framework;
 namespace cratemonotest
 {
     [TestFixture()]
-    internal class DataManipulationTest
+    internal class DataManipulationTest:BaseSetup
     {
         [Test]
         public void TestUpdate()
         {
-            using (var conn = new CrateConnection())
+            using (var conn = TestCrateConnection())
             {
                 conn.Open();
                 conn.Update<Tweet>(t => t.Id == "test",
